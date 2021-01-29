@@ -1,4 +1,3 @@
-// RandomLib.h
 #pragma once
 #include <random>
 #include <exception>
@@ -10,52 +9,52 @@
 #include <typeinfo>
 
 ////// ------ RANDOM CORE ------ //////
-class RandomCore
+class _Core
 {
 public:
 	template<typename T>
 	T				rndInRange(T t_min, T t_max);
 
-	static	
-	RandomCore*		getInstance();
-	void			setSeed(unsigned long t_seed);
-	unsigned long	getSeed();
+	static
+		_Core*		getInstance();
+	void			setSeed(uint32_t t_seed);
+	uint32_t	getSeed();
 	bool			isValid();
 
 private:
-	RandomCore();
-	~RandomCore();
-	RandomCore(const RandomCore& other)				= delete;
-	RandomCore& operator=(const RandomCore& other)	= delete;
+	_Core();
+	~_Core();
+	_Core(const _Core& other) = delete;
+	_Core& operator=(const _Core& other) = delete;
 
-	static 
-	RandomCore*		m_instance; // #data_member: the random core object
+	static
+		_Core*		m_instance; // #data_member: the random core object
 	std::mt19937	m_engine;	// #data_member: the engine
-	unsigned long	m_seed;		// #data_member: seed of the engine
+	uint32_t	m_seed;		// #data_member: seed of the engine
 	bool			m_valid;	// #data_member: seed is set or not
 };
 
 ////// ------ RANDOM WEIGHT ------ //////
-class RandomWeight
+class _Weighted
 {
 public:
-	bool		setId(uint32_t t_id, uint32_t t_weight);
+	bool		addId(uint32_t t_id, uint32_t t_weight);
 	bool		delId(uint32_t t_id);
 	uint32_t	getId();
 	uint32_t	getWeight(uint32_t t_id);
 	void		dump();
 
-	explicit RandomWeight();
-	explicit RandomWeight(const RandomWeight& other);
-	RandomWeight& operator=(RandomWeight& other) = delete;
-	~RandomWeight();
+	explicit _Weighted();
+	explicit _Weighted(const _Weighted& other);
+	_Weighted& operator=(_Weighted& other) = delete;
+	~_Weighted();
 
 	std::map<uint32_t, uint32_t>	m_data;
 	uint32_t						m_totalWeight;
 };
 
 template<typename T>
-inline T RandomCore::rndInRange(T t_min, T t_max)
+inline T _Core::rndInRange(T t_min, T t_max)
 {
 	try
 	{
@@ -83,7 +82,7 @@ inline T RandomCore::rndInRange(T t_min, T t_max)
 	catch (const std::invalid_argument& exp)
 	{
 		std::cout << exp.what() << '\n';
-		std::cout << "(" << typeid(t_min).name() << ")["<< t_min << " : " << t_max << "]" << '\n';
+		std::cout << "(" << typeid(t_min).name() << ")[" << t_min << " : " << t_max << "]" << '\n';
 		// std::cout << "Press ENTER to exit..." << '\n';
 		// std::cin.get();
 		exit(EXIT_FAILURE);
@@ -96,3 +95,4 @@ inline T RandomCore::rndInRange(T t_min, T t_max)
 		exit(EXIT_FAILURE);
 	}
 }
+

@@ -1,19 +1,18 @@
-// RandomLib.cpp
-#include "RandomLib.h"
+#include "core.h"
 #include <iostream>
 
-RandomCore* RandomCore::m_instance{ nullptr };
+_Core* _Core::m_instance{ nullptr };
 
-RandomCore * RandomCore::getInstance()
+_Core * _Core::getInstance()
 {
 	if (m_instance == nullptr)
 	{
-		m_instance = new RandomCore();
+		m_instance = new _Core();
 	}
 	return m_instance;
 }
 
-void RandomCore::setSeed(unsigned long t_seed)
+void _Core::setSeed(uint32_t t_seed)
 {
 	if (m_valid == false)
 	{
@@ -27,7 +26,7 @@ void RandomCore::setSeed(unsigned long t_seed)
 	}
 }
 
-unsigned long RandomCore::getSeed()
+uint32_t _Core::getSeed()
 {
 	try
 	{
@@ -49,20 +48,18 @@ unsigned long RandomCore::getSeed()
 	}
 }
 
-bool RandomCore::isValid()
+bool _Core::isValid()
 {
 	return m_valid;
 }
 
-RandomCore::RandomCore():m_seed(0), m_valid(false)
-{
-}
+_Core::_Core() :m_seed(0), m_valid(false)
+{}
 
-RandomCore::~RandomCore()
-{
-}
+_Core::~_Core()
+{}
 
-bool RandomWeight::setId(uint32_t t_id, uint32_t t_weight)
+bool _Weighted::addId(uint32_t t_id, uint32_t t_weight)
 {
 	if (t_weight > 0)
 	{
@@ -79,8 +76,8 @@ bool RandomWeight::setId(uint32_t t_id, uint32_t t_weight)
 	}
 }
 
-bool RandomWeight::delId(uint32_t t_id)
-{	
+bool _Weighted::delId(uint32_t t_id)
+{
 	auto find_result = m_data.find(t_id);
 	auto removed_weight = (find_result != m_data.end()) ? ((*find_result).second) : 0;
 	auto result = m_data.erase(t_id);
@@ -91,41 +88,41 @@ bool RandomWeight::delId(uint32_t t_id)
 	return result;
 }
 
-uint32_t RandomWeight::getId()
+uint32_t _Weighted::getId()
 {
 	/*try
 	{*/
-		if (m_data.size() > 0)
+	if (m_data.size() > 0)
+	{
+		uint32_t random_weight = _Core::getInstance()->rndInRange<uint32_t>(1, m_totalWeight);
+		uint32_t current_weight = 0;
+		uint32_t id = 0;
+		for (auto itr = m_data.begin(); itr != m_data.end(); ++itr)
 		{
-			uint32_t random_weight = RandomCore::getInstance()->rndInRange<uint32_t>(1, m_totalWeight);
-			uint32_t current_weight = 0;
-			uint32_t id = 0;
-			for (auto itr = m_data.begin(); itr != m_data.end(); ++itr)
+			current_weight += (*itr).second;
+			if (current_weight >= random_weight)
 			{
-				current_weight += (*itr).second;
-				if (current_weight >= random_weight)
-				{
-					id = (*itr).first;
-					break;
-				}
+				id = (*itr).first;
+				break;
 			}
-			return id;
 		}
-		else
-		{
-			throw std::invalid_argument{ "ERROR: Empty object data." };
-		}
+		return id;
+	}
+	else
+	{
+		throw std::invalid_argument{ "ERROR: Empty object data." };
+	}
 	/*}
 	catch (const std::runtime_error& exp)
 	{
-		std::cout << exp.what() << '\n';
-		// std::cout << "Press ENTER to exit..." << '\n';
-		// std::cin.get();
-		exit(EXIT_FAILURE);
+	std::cout << exp.what() << '\n';
+	// std::cout << "Press ENTER to exit..." << '\n';
+	// std::cin.get();
+	exit(EXIT_FAILURE);
 	}*/
 }
 
-uint32_t RandomWeight::getWeight(uint32_t t_id)
+uint32_t _Weighted::getWeight(uint32_t t_id)
 {
 	try
 	{
@@ -147,29 +144,28 @@ uint32_t RandomWeight::getWeight(uint32_t t_id)
 		// std::cin.get();
 		exit(EXIT_FAILURE);
 	}
-	
+
 }
 
-void RandomWeight::dump()
+void _Weighted::dump()
 {
 	std::cout << "\t==== DATA table ====" << '\n';
 	std::cout << "\t     " << "ID" << " <-> " << "WEIGHT" << '\n';
 	for (auto itr = m_data.begin(); itr != m_data.end(); ++itr)
 	{
-		std::cout << "\t"<<std::setw(7) << std::setfill(' ') << (*itr).first << " <-> " << (*itr).second << '\n';
+		std::cout << "\t" << std::setw(7) << std::setfill(' ') << (*itr).first << " <-> " << (*itr).second << '\n';
 	}
 	std::cout << "\t       " << "-----" << '\n';
 	std::cout << "\t-> Total W: " << m_totalWeight << '\n';
-	std::cout<< '\n';
+	std::cout << '\n';
 }
 
-RandomWeight::RandomWeight() : m_data({}), m_totalWeight(0)
-{
-}
+_Weighted::_Weighted() : m_data({}), m_totalWeight(0)
+{}
 
-RandomWeight::RandomWeight(const RandomWeight & other) : m_data(other.m_data), m_totalWeight(other.m_totalWeight)
+_Weighted::_Weighted(const _Weighted & other) : m_data(other.m_data), m_totalWeight(other.m_totalWeight)
 {
-	
+
 }
 
 //RandomWeight & RandomWeight::operator=(RandomWeight & other)
@@ -189,8 +185,5 @@ RandomWeight::RandomWeight(const RandomWeight & other) : m_data(other.m_data), m
 //}
 
 
-RandomWeight::~RandomWeight()
-{
-}
-
-// RandomLib.h
+_Weighted::~_Weighted()
+{}
