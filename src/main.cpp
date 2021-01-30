@@ -3,9 +3,9 @@
 #include <random>
 int main()
 {
-	Random::Core_Feature::setSeed(std::random_device{}());
+	FBW_Random::Base::setSeed(std::random_device{}());
 
-	Random::Core<char> rnd;
+	FBW_Random::Core<char> rnd;
 	std::cout << std::showbase << std::boolalpha;
 	std::cout << rnd.addObj('a'		, 10) << '\n';
 	std::cout << rnd.addObj('b'		, 10) << '\n';
@@ -26,7 +26,7 @@ int main()
 	std::cout << rnd.getObj() << '\n';
 
 	rnd.dump();
-
+	
 	
 
 	std::cin.get();
