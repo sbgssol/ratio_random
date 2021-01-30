@@ -6,9 +6,6 @@
 #include <algorithm>
 #include <iomanip>
 
-class _Core;
-class _Weighted;
-
 namespace FBW_Random
 {
 	// Client code uses this type to:
@@ -18,7 +15,7 @@ namespace FBW_Random
 	class Base
 	{
 	public:
-		static void			setSeed		(uint32_t t_seed);
+		static bool			setSeed		(uint32_t t_seed);
 		static uint32_t		getSeed		();
 		template<typename T>
 		static T			rndInRange	(T t_min, T t_max);
@@ -28,6 +25,7 @@ namespace FBW_Random
 		// Client code cannot use this type.
 		class Weighted_Feature
 		{
+			class _Weighted;
 			// Inaccessible from client codes
 			static _Weighted*	getRndGen		();
 			static void			releaseRndGen	(_Weighted* t_rnd_gen);
@@ -64,7 +62,7 @@ namespace FBW_Random
 
 	private:
 		std::map<uint32_t, CLASS_T> m_objData;
-		_Weighted*					m_rndGen;
+		Base::Weighted_Feature::_Weighted*					m_rndGen;
 	};
 }
 

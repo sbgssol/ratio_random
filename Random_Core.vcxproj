@@ -124,11 +124,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\core.h" />
     <ClInclude Include="include\random.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\core.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\random.cpp" />
   </ItemGroup>
