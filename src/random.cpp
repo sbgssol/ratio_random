@@ -178,8 +178,7 @@ namespace RRND {
   T Basic::random(T t_min, T t_max) {
     return CBasicFeature::getInstance()->random(t_min, t_max);
   }
-
-
+  
 
   // Specialization -> random
   template int32_t    RRND::Basic::random<int32_t>(int32_t, int32_t);

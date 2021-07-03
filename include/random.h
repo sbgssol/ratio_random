@@ -38,13 +38,15 @@ namespace RRND {
   public:
     Core();
 
-    void                                add(const CLASS_C& t_obj, uint32_t t_weight);
-    bool                                remove(size_t t_position);
-    const CLASS_C&                      random();
-    uint32_t                            size() const;
-    std::pair<CLASS_C&, uint32_t>       at(size_t t_position);
+    void                                       add(const CLASS_C& t_obj, uint32_t t_weight = 10);
+    bool                                       remove(size_t t_position);
+    const CLASS_C&                             random();
+    uint32_t                                   size() const;
+    std::pair<CLASS_C&, uint32_t>              at(size_t t_position);
+    const void                                 dump() const;
+    template<class FUNCTION>
+    const void                                 dump(FUNCTION f) const;
     const std::pair<const CLASS_C&, uint32_t>& at(size_t t_position) const;
-    const void                          dump() const;
     
   protected:
   private:
@@ -96,4 +98,12 @@ const std::pair<const CLASS_C&, uint32_t>& RRND::Core<CLASS_C>::at(size_t t_posi
 template <class CLASS_C>
 const void RRND::Core<CLASS_C>::dump() const {
   Basic::Ratio::dump(m_randomPtr);
+}
+
+template <class CLASS_C>
+template <class FUNCTION>
+const void RRND::Core<CLASS_C>::dump(FUNCTION f) const {
+  for(const auto& p : m_objMap) {
+    std::cout << "ID: " << p.first << ", Detail: " << f(p.second.first) << ", W: " << p.second.second << '\n';
+  }
 }
