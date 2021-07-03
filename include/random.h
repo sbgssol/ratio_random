@@ -6,183 +6,94 @@
 #include <algorithm>
 #include <iomanip>
 
-namespace FBW_Random
-{
-	// Client code uses this type to:
-	// 1. Set random seed
-	// 2. Get random seed
-	// 3. Random a number in a specific range
-	class Base
-	{
-	public:
-		static bool			setSeed		(uint32_t t_seed);
-		static uint32_t		getSeed		();
-		template<typename T>
-		static T			rndInRange	(T t_min, T t_max);
+namespace RRND {
+  class Basic {
+  public:
+    static bool     set_seed(uint32_t t_seed);
+    static uint32_t get_seed();
+    template<typename T=uint32_t>
+    static T        random(T t_min, T t_max);
+  protected:
+  private:
+    class Ratio {
+    public:
+    protected:
+    private:
+      class CRatioFeature;
+      static CRatioFeature* get_ratio_randomizer();
+      static void           add(uint32_t t_id, uint32_t t_weight, CRatioFeature* t_ratio_random_ptr);
+      static bool           remove(uint32_t t_id, CRatioFeature* t_ratio_random_ptr);
+      static uint32_t       random(CRatioFeature* t_ratio_random_ptr);
+      static void           dump(CRatioFeature* t_ratio_random_ptr);
 
-	private:
-		// ==== IMPORTANT ====
-		// Client code cannot use this type.
-		class Weighted_Feature
-		{
-			class _Weighted;
-			// Inaccessible from client codes
-			static _Weighted*	getRndGen		();
-			static void			releaseRndGen	(_Weighted* t_rnd_gen);
-			static _Weighted*	copyRndGen		(_Weighted* t_other);
-			static bool			addId			(uint32_t t_id, uint32_t t_weight, _Weighted* t_rnd_gen);
-			static bool			delId			(uint32_t t_id, _Weighted* t_rnd_gen);
-			static uint32_t		getId			(_Weighted* t_rnd_gen);
-			static void			dumpData		(_Weighted* t_rnd_gen);
-			static uint32_t		getWeight		(uint32_t t_id, _Weighted* t_rnd_gen);
+      template<class T>
+      friend class Core;
+    };
+    template<class T>
+    friend class Core;
+  };
 
-			template<class T>
-			friend class Core;
-		};
-		template<class T>
-		friend class Core;
-	};
-	/* === CLASS_T requirements ===*/
-	/* 1. To random CLASS_T objects, CLASS_T must overload the operator=*/
-	/* 2. To use dump function, CLASS_T must overload the operator<<*/
-	template<typename CLASS_T = uint32_t>
-	class Core
-	{
-	public:
-		~Core();
-		explicit	Core();
-		explicit	Core<CLASS_T>(const Core<CLASS_T>& t_other);
+  template<class CLASS_C = uint32_t>
+  class Core {
+  public:
+    Core();
 
-		bool		addObj	(const CLASS_T& t_obj, uint32_t t_weight = 10);
-		CLASS_T		getObj	() const;
-		bool		delObj	(CLASS_T t_obj);
-		void		dump	();
-		bool		valid	() const;
-		uint32_t	countObj() const;
-
-	private:
-		std::map<uint32_t, CLASS_T> m_objData;
-		Base::Weighted_Feature::_Weighted*					m_rndGen;
-	};
+    void                                add(const CLASS_C& t_obj, uint32_t t_weight);
+    bool                                remove(size_t t_position);
+    const CLASS_C&                      random();
+    uint32_t                            size() const;
+    std::pair<CLASS_C&, uint32_t>       at(size_t t_position);
+    const std::pair<const CLASS_C&, uint32_t>& at(size_t t_position) const;
+    const void                          dump() const;
+    
+  protected:
+  private:
+    uint32_t m_idx;
+    std::map<uint32_t, std::pair<CLASS_C, uint32_t>> m_objMap;
+    Basic::Ratio::CRatioFeature* m_randomPtr;
+  };
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*====== Random Core implementation ======*/
-template<typename CLASS_T>
-inline FBW_Random::Core<CLASS_T>::Core() : m_rndGen(Base::Weighted_Feature::getRndGen())
-{}
-
-template<typename CLASS_T>
-inline FBW_Random::Core<CLASS_T>::~Core()
-{
-	FBW_Random::Base::Weighted_Feature::releaseRndGen(m_rndGen);
+template <class CLASS_C>
+RRND::Core<CLASS_C>::Core() :m_idx(0), m_randomPtr(Basic::Ratio::get_ratio_randomizer()) {
 }
 
-template<typename CLASS_T>
-inline FBW_Random::Core<CLASS_T>::Core(const Core & t_other)
-	: m_objData(t_other.m_objData), m_rndGen(Base::Weighted_Feature::copyRndGen(t_other.m_rndGen))
-{}
-
-template<typename CLASS_T>
-inline bool FBW_Random::Core<CLASS_T>::addObj(const CLASS_T& t_obj, uint32_t t_weight)
-{
-
-	uint32_t id = ((m_objData.size()) ? ((*std::prev(m_objData.end())).first) : (1));
-
-	bool object_exists = std::find_if(m_objData.begin(), m_objData.end(), [=](const std::pair<uint32_t, CLASS_T>& t_pair_obj)
-	{
-		return (t_pair_obj.second == t_obj);
-	}) != m_objData.end();
-
-	if (object_exists == false)
-	{
-		uint32_t id = ((m_objData.size()) ? ((*std::prev(m_objData.end())).first + 1) : (1));
-		m_objData.insert({ id, t_obj });
-		Base::Weighted_Feature::addId(id, t_weight, m_rndGen);
-	}
-	return object_exists;
-
+template <class CLASS_C>
+void RRND::Core<CLASS_C>::add(const CLASS_C& t_obj, uint32_t t_weight) {
+  m_objMap.insert({ m_idx, {t_obj, t_weight } });
+  Basic::Ratio::add(m_idx, t_weight, m_randomPtr);
+  ++m_idx;
 }
 
-template<typename CLASS_T>
-inline CLASS_T FBW_Random::Core<CLASS_T>::getObj() const
-{
-	return (*m_objData.find(Base::Weighted_Feature::getId(m_rndGen))).second;
+template <class CLASS_C>
+bool RRND::Core<CLASS_C>::remove(size_t t_position) {
+  m_objMap.erase(t_position);
+
+  return Basic::Ratio::remove(t_position, m_randomPtr);
 }
 
-template<typename CLASS_T>
-inline bool FBW_Random::Core<CLASS_T>::delObj(CLASS_T t_obj)
-{
-	if (m_objData.size() == 0) // first time call
-	{
-		//std::cout << "Nothing to delete." << '\n';
-		return false;
-	}
-	else
-	{
-		auto itr_existed = std::find_if(m_objData.begin(), m_objData.end(), [=](const std::pair<uint32_t, CLASS_T>& t_pair_obj)
-		{
-			return (t_pair_obj.second == t_obj);
-		});
-
-		// 2. Delete
-		if (itr_existed != m_objData.end())
-		{
-			uint32_t id = (*itr_existed).first;
-			m_objData.erase(id);
-			Base::Weighted_Feature::delId(id, m_rndGen);
-			return true;
-		}
-		else
-		{
-			//std::cout << "Not found object." << '\n';
-			return false;
-		}
-	}
-	return false;
+template <class CLASS_C>
+const CLASS_C& RRND::Core<CLASS_C>::random() {
+  return m_objMap.at(Basic::Ratio::random(m_randomPtr)).first;
 }
 
-template<typename CLASS_T>
-inline void FBW_Random::Core<CLASS_T>::dump()
-{
-	std::vector<std::pair<CLASS_T, uint32_t>> dump_data{};
-	for (auto itr = m_objData.begin(); itr != m_objData.end(); ++itr)
-	{
-		dump_data.push_back({ (*itr).second, Base::Weighted_Feature::getWeight((*itr).first, m_rndGen) });
-	}
-
-	std::cout << "\t" << "==== DATA objects ====" << '\n';
-	std::cout << "\t " << "WEIGHT" << " <-> " << "OBJECTS" << '\n';
-	for (auto itr = dump_data.begin(); itr != dump_data.end(); ++itr)
-	{
-		std::cout << "\t  " << std::right << std::setw(5) << std::setfill(' ') << (*itr).second << " <-> " << (*itr).first << '\n';
-	}
-	std::cout << '\n';
-	Base::Weighted_Feature::dumpData(m_rndGen);
+template <class CLASS_C>
+uint32_t RRND::Core<CLASS_C>::size() const {
+  return (uint32_t)m_objMap.size();
 }
 
-template<typename CLASS_T>
-inline bool FBW_Random::Core<CLASS_T>::valid() const
-{
-	return (m_objData.size());
+template <class CLASS_C>
+std::pair<CLASS_C&, uint32_t> RRND::Core<CLASS_C>::at(size_t t_position) {
+  return { m_objMap.at(t_position).first, m_objMap.at(t_position).second };
 }
 
-template<typename CLASS_T>
-inline uint32_t FBW_Random::Core<CLASS_T>::countObj() const
-{
-	return (uint32_t)m_objData.size();
+template <class CLASS_C>
+const std::pair<const CLASS_C&, uint32_t>& RRND::Core<CLASS_C>::at(size_t t_position) const {
+  return { m_objMap.at(t_position).first, m_objMap.at(t_position).second };
+}
+
+template <class CLASS_C>
+const void RRND::Core<CLASS_C>::dump() const {
+  Basic::Ratio::dump(m_randomPtr);
 }

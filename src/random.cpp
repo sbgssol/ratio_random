@@ -8,343 +8,183 @@
 #include <iomanip>
 #include <typeinfo>
 
-class _Core
-{
-public:
-	template<typename T>
-	T				rndInRange(T t_min, T t_max);
-	static _Core*	getInstance();
-	bool			setSeed(uint32_t t_seed);
-	uint32_t		getSeed();
-	bool			isValid();
+namespace RRND {
+  /*============= Class CBasicFeature declaration =============*/
+  class CBasicFeature {
+  public:
+    static CBasicFeature* getInstance();
+    
+    bool                  setSeed(uint32_t t_seed);
+    
+    uint32_t              getSeed() const;
 
-private:
-	_Core();
-	~_Core();
-	_Core(const _Core& other) = delete;
-	_Core& operator=(const _Core& other) = delete;
+    template<typename T = uint32_t>
+    T random(T t_min, T t_max);
+    
+  protected:
+  private:
+    CBasicFeature() :m_seed(0), m_engine{ std::random_device{}() } {}
+    ~CBasicFeature() = default;
 
-	static
-		_Core*		m_instance; // #data_member: the random core object
-	std::mt19937	m_engine;	// #data_member: the engine
-	uint32_t	m_seed;		// #data_member: seed of the engine
-	bool			m_valid;	// #data_member: seed is set or not
-};
+    uint32_t              m_seed;
+    std::mt19937          m_engine;
+    static CBasicFeature* m_self;
+  };
 
-class FBW_Random::Base::Weighted_Feature::_Weighted
-{
-public:
-	bool		addId(uint32_t t_id, uint32_t t_weight);
-	bool		delId(uint32_t t_id);
-	uint32_t	getId();
-	uint32_t	getWeight(uint32_t t_id);
-	void		dump();
+  /*============= Class CBasicFeature definition =============*/
+  CBasicFeature* CBasicFeature::getInstance() {
+    if (m_self == nullptr) {
+      m_self = new CBasicFeature();
+    }
 
-	explicit _Weighted();
-	explicit _Weighted(const _Weighted& other);
-	_Weighted& operator=(_Weighted& other) = delete;
-	~_Weighted();
+    return m_self;
+  }
 
-	std::map<uint32_t, uint32_t>	m_data;
-	uint32_t						m_totalWeight;
-};
+  bool CBasicFeature::setSeed(uint32_t t_seed) {
+    if (m_seed) {
+      return false;
+    }
 
-_Core* _Core::m_instance{ nullptr };
+    m_seed = t_seed;
+    m_engine.seed(t_seed);
 
-_Core * _Core::getInstance()
-{
-	if (m_instance == nullptr)
-	{
-		m_instance = new _Core();
-	}
-	return m_instance;
-}
+    return true;
+  }
 
-bool _Core::setSeed(uint32_t t_seed)
-{
-	if (m_valid == false)
-	{
-		m_valid = true;
-		m_seed = t_seed;
-		m_engine.seed(m_seed);
-		return true;
-	}
+  uint32_t CBasicFeature::getSeed() const {
+    return m_seed;
+  }
 
-	return (m_valid == false);
-}
+  template <typename T>
+  T CBasicFeature::random(T t_min, T t_max) {
+    if (t_min == t_max) {
+      return t_min;
+    }
 
-uint32_t _Core::getSeed()
-{
-	try
-	{
-		if (m_valid != false)
-		{
-			return m_seed;
-		}
-		else
-		{
-			throw std::invalid_argument{ "ERROR: No seed is specified./." };
-		}
-	}
-	catch (const std::runtime_error& exp)
-	{
-		std::cout << exp.what() << '\n';
-		// std::cout << "Press ENTER to exit..." << '\n';
-		// std::cin.get();
-		exit(EXIT_FAILURE);
-	}
-}
+    if (t_min > t_max) {
+      std::swap(t_min, t_max);
+    }
 
-bool _Core::isValid()
-{
-	return m_valid;
-}
+    if (m_seed == 0) {
+      throw std::runtime_error{ "ERROR: Random seed was not set!" };
+    }
 
-_Core::_Core() :m_seed(0), m_valid(false)
-{}
+    return (std::uniform_int_distribution<T>(t_min, t_max)(m_engine));
+  }
 
-_Core::~_Core()
-{}
+  /*============================/END/=============================*/
 
-bool FBW_Random::Base::setSeed(uint32_t t_seed)
-{
-	return _Core::getInstance()->setSeed(t_seed);
-}
+  CBasicFeature* CBasicFeature::m_self{ nullptr };
 
-uint32_t FBW_Random::Base::getSeed()
-{
-	return _Core::getInstance()->getSeed();
-}
+  /*============= Class CRatioFeature declaration =============*/
+  /**
+   * \brief This class is hidden from user, contains all data and performs random
+   */
+  class Basic::Ratio::CRatioFeature {
+    using ID = uint32_t;
+    using WEIGHT = uint32_t;
+  public:
+    CRatioFeature() = default;
 
-FBW_Random::Base::Weighted_Feature::_Weighted* FBW_Random::Base::Weighted_Feature::getRndGen()
-{
-	auto ptr = new _Weighted();
-	return ptr;
-}
+    void add(ID t_id, WEIGHT t_weight);
+    bool remove(ID t_id);
+    ID   random() const;
+    void dump() const;
+  protected:
+  private:
+    std::map<ID, WEIGHT> m_objList; // Contains <ID, WEIGHT>
+  };
 
-bool FBW_Random::Base::Weighted_Feature::addId(uint32_t t_id, uint32_t t_weight, _Weighted * t_rnd_gen)
-{
-	return (t_rnd_gen->addId(t_id, t_weight));
-}
+  /*============= Class CRatioFeature definition =============*/
+  void Basic::Ratio::CRatioFeature::add(ID t_id, WEIGHT t_weight) {
+    if(t_weight == 0) {
+      return;
+    }
+    m_objList.insert({ t_id, t_weight });
+  }
 
-bool FBW_Random::Base::Weighted_Feature::delId(uint32_t t_id, _Weighted * t_rnd_gen)
-{
-	return t_rnd_gen->delId(t_id);
-}
+  bool Basic::Ratio::CRatioFeature::remove(ID t_id) {
+    m_objList.at(t_id) = 0;
+    return true;//m_objList.erase(t_id);
+  }
 
-uint32_t FBW_Random::Base::Weighted_Feature::getId(_Weighted * t_rnd_gen)
-{
-	return t_rnd_gen->getId();
-}
+  // BUG: Random in range of inserted idx, meanwhile, there are idx(s) that maybe removed
 
-uint32_t FBW_Random::Base::Weighted_Feature::getWeight(uint32_t t_id, _Weighted* t_rnd_gen)
-{
-	return t_rnd_gen->getWeight(t_id);
-}
+  Basic::Ratio::CRatioFeature::ID Basic::Ratio::CRatioFeature::random() const {
+    if(m_objList.empty()) {
+      throw std::runtime_error{ "ERROR: Object list was empty to random!" };
+    }
 
-void FBW_Random::Base::Weighted_Feature::releaseRndGen(_Weighted * t_rnd_gen)
-{
-	delete t_rnd_gen;
-}
+    uint32_t total_weight = 0;
+    for(const auto& p : m_objList) {
+      total_weight += p.second;
+    }
 
-FBW_Random::Base::Weighted_Feature::_Weighted * FBW_Random::Base::Weighted_Feature::copyRndGen(_Weighted * t_other)
-{
-	_Weighted* ptr = new _Weighted((*t_other));
-	return ptr;
-}
+    const uint32_t minimum_random_weight = 1;
+    const uint32_t random_weight = CBasicFeature::getInstance()->random(minimum_random_weight, total_weight);
 
-void FBW_Random::Base::Weighted_Feature::dumpData(_Weighted * t_rnd_gen)
-{
-	t_rnd_gen->dump();
-}
+    uint32_t current_weight = 0;
+    ID result = (*m_objList.begin()).first;
+    for(const auto& p : m_objList) {
+      if(current_weight + p.second >= random_weight) {
+        result = p.first;
+        break;
+      }
 
-template<typename T>
-T FBW_Random::Base::rndInRange(T t_min, T t_max)
-{
-	return _Core::getInstance()->rndInRange<T>(t_min, t_max);
-}
+      current_weight += p.second;
+    }
 
+    return result;
+  }
 
-// Specialization -> rndInRange
-template int32_t	FBW_Random::Base::rndInRange<int32_t>(int32_t, int32_t);
-template int64_t	FBW_Random::Base::rndInRange<int64_t>(int64_t, int64_t);
-template uint32_t	FBW_Random::Base::rndInRange<uint32_t>(uint32_t, uint32_t);
-template uint64_t	FBW_Random::Base::rndInRange<uint64_t>(uint64_t, uint64_t);
+  void Basic::Ratio::CRatioFeature::dump() const {
+    for(const auto& p : m_objList) {
+      std::cout << "ID: " << p.first << ", W: " << p.second << '\n';
+    }
+    std::cout << "====================" << '\n';
+  }
 
-template<typename T>
-inline T _Core::rndInRange(T t_min, T t_max)
-{
-	try
-	{
-		if (m_valid != false)
-		{
-			if (t_min < t_max)
-			{
-				return std::uniform_int_distribution<T>(t_min, t_max)(m_engine);
-			}
-			else if (t_min == t_max)
-			{
-				return t_min;
-			}
-			else
-			{
-				throw std::invalid_argument{ "ERROR: Wrong range./." };
-			}
-		}
-		else
-		{
-			throw std::invalid_argument{ "ERROR: No seed is specified./." };
-			// Throw run time error: There is no seed
-		}
-	}
-	catch (const std::invalid_argument& exp)
-	{
-		std::cout << exp.what() << '\n';
-		std::cout << "(" << typeid(t_min).name() << ")[" << t_min << " : " << t_max << "]" << '\n';
-		// std::cout << "Press ENTER to exit..." << '\n';
-		// std::cin.get();
-		exit(EXIT_FAILURE);
-	}
-	catch (const std::runtime_error& exp)
-	{
-		std::cout << exp.what() << '\n';
-		// std::cout << "Press ENTER to exit..." << '\n';
-		// std::cin.get();
-		exit(EXIT_FAILURE);
-	}
-}
+  /*============================/END/=============================*/
+    /*============= Header functions definition =============*/
+  bool Basic::set_seed(uint32_t t_seed) {
+    return CBasicFeature::getInstance()->setSeed(t_seed);
+  }
 
-template int32_t	_Core::rndInRange<int32_t>(int32_t, int32_t);
-template int64_t	_Core::rndInRange<int64_t>(int64_t, int64_t);
-template uint32_t	_Core::rndInRange<uint32_t>(uint32_t, uint32_t);
-template uint64_t	_Core::rndInRange<uint64_t>(uint64_t, uint64_t);
+  uint32_t Basic::get_seed() {
+    return CBasicFeature::getInstance()->getSeed();
+  }
+
+  Basic::Ratio::CRatioFeature* Basic::Ratio::get_ratio_randomizer() {
+    return (new CRatioFeature());
+  }
+
+  void Basic::Ratio::add(uint32_t t_id, uint32_t t_weight, CRatioFeature* t_ratio_random_ptr) {
+    t_ratio_random_ptr->add(t_id, t_weight);
+  }
+
+  bool Basic::Ratio::remove(uint32_t t_id, CRatioFeature* t_ratio_random_ptr) {
+    return t_ratio_random_ptr->remove(t_id);
+  }
+
+  uint32_t Basic::Ratio::random(CRatioFeature* t_ratio_random_ptr) {
+    return t_ratio_random_ptr->random();
+  }
+
+  void Basic::Ratio::dump(CRatioFeature* t_ratio_random_ptr) {
+    t_ratio_random_ptr->dump();
+  }
+
+  template <typename T>
+  T Basic::random(T t_min, T t_max) {
+    return CBasicFeature::getInstance()->random(t_min, t_max);
+  }
 
 
-bool FBW_Random::Base::Weighted_Feature::_Weighted::addId(uint32_t t_id, uint32_t t_weight)
-{
-	if (t_weight > 0)
-	{
-		auto result = m_data.insert({ t_id, t_weight });
-		if (result.second)
-		{
-			m_totalWeight += t_weight;
-		}
-		return result.second;
-	}
-	else
-	{
-		return false;
-	}
-}
 
-bool FBW_Random::Base::Weighted_Feature::_Weighted::delId(uint32_t t_id)
-{
-	auto find_result = m_data.find(t_id);
-	auto removed_weight = (find_result != m_data.end()) ? ((*find_result).second) : 0;
-	auto result = m_data.erase(t_id);
-	if (result)
-	{
-		m_totalWeight -= removed_weight;
-	}
-	return result;
-}
-
-uint32_t FBW_Random::Base::Weighted_Feature::_Weighted::getId()
-{
-	/*try
-	{*/
-	if (m_data.size() > 0)
-	{
-		uint32_t random_weight = _Core::getInstance()->rndInRange<uint32_t>(1, m_totalWeight);
-		uint32_t current_weight = 0;
-		uint32_t id = 0;
-		for (auto itr = m_data.begin(); itr != m_data.end(); ++itr)
-		{
-			current_weight += (*itr).second;
-			if (current_weight >= random_weight)
-			{
-				id = (*itr).first;
-				break;
-			}
-		}
-		return id;
-	}
-	else
-	{
-		throw std::invalid_argument{ "ERROR: Empty object data." };
-	}
-	/*}
-	catch (const std::runtime_error& exp)
-	{
-	std::cout << exp.what() << '\n';
-	// std::cout << "Press ENTER to exit..." << '\n';
-	// std::cin.get();
-	exit(EXIT_FAILURE);
-	}*/
-}
-
-uint32_t FBW_Random::Base::Weighted_Feature::_Weighted::getWeight(uint32_t t_id)
-{
-	try
-	{
-		auto find_result = m_data.find(t_id);
-		auto target_weight = (find_result != m_data.end()) ? ((*find_result).second) : std::string::npos;
-		if (target_weight != std::string::npos)
-		{
-			return (uint32_t)target_weight;
-		}
-		else
-		{
-			throw std::invalid_argument{ "ERROR: Not found object." };
-		}
-	}
-	catch (const std::runtime_error& exp)
-	{
-		std::cout << exp.what() << '\n';
-		// std::cout << "Press ENTER to exit..." << '\n';
-		// std::cin.get();
-		exit(EXIT_FAILURE);
-	}
+  // Specialization -> random
+  template int32_t    RRND::Basic::random<int32_t>(int32_t, int32_t);
+  template int64_t    RRND::Basic::random<int64_t>(int64_t, int64_t);
+  template uint32_t   RRND::Basic::random<uint32_t>(uint32_t, uint32_t);
+  template uint64_t   RRND::Basic::random<uint64_t>(uint64_t, uint64_t);
 
 }
-
-void FBW_Random::Base::Weighted_Feature::_Weighted::dump()
-{
-	std::cout << "\t==== DATA table ====" << '\n';
-	std::cout << "\t     " << "ID" << " <-> " << "WEIGHT" << '\n';
-	for (auto itr = m_data.begin(); itr != m_data.end(); ++itr)
-	{
-		std::cout << "\t" << std::setw(7) << std::setfill(' ') << (*itr).first << " <-> " << (*itr).second << '\n';
-	}
-	std::cout << "\t       " << "-----" << '\n';
-	std::cout << "\t-> Total W: " << m_totalWeight << '\n';
-	std::cout << '\n';
-}
-
-FBW_Random::Base::Weighted_Feature::_Weighted::_Weighted() : m_data({}), m_totalWeight(0)
-{}
-
-FBW_Random::Base::Weighted_Feature::_Weighted::_Weighted(const _Weighted & other) : m_data(other.m_data), m_totalWeight(other.m_totalWeight)
-{
-
-}
-
-//RandomWeight & RandomWeight::operator=(RandomWeight & other)
-//{
-//	if (other.m_data.empty() == false)
-//	{
-//		std::copy(other.m_data.begin(), other.m_data.end(), this->m_data.begin());
-//		this->m_data = other.m_data;
-//	}
-//	else
-//	{
-//		this->m_data.clear();
-//		this->m_totalWeight = 0;
-//	}
-//
-//	return *this;
-//}
-
-
-FBW_Random::Base::Weighted_Feature::_Weighted::~_Weighted()
-{}
