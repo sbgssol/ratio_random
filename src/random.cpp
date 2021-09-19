@@ -1,33 +1,26 @@
 #include "random.h"
 #include <iostream>
 #include <random>
-#include <exception>
 #include <cstdint>
 #include <typeinfo>
 #include <map>
+#include <unordered_map>
 #include <iomanip>
-#include <typeinfo>
+#include <algorithm>
+#include <numeric>
 
 namespace RRND {
   /*============= Class CBasicFeature declaration =============*/
   class CBasicFeature {
   public:
-    static CBasicFeature* getInstance();
-    
-    bool                  setSeed(uint32_t t_seed);
-    
+    static CBasicFeature* getInstance();    
+    bool                  setSeed(uint32_t t_seed);    
     uint32_t              getSeed() const;
-
     template<typename T = uint32_t>
-    T random(T t_min, T t_max);
-    
-  protected:
+    T                     random(T t_min, T t_max);
   private:
-    CBasicFeature() :m_seed(0), m_engine{ std::random_device{}() } {}
-    ~CBasicFeature() = default;
-
-    uint32_t              m_seed;
-    std::mt19937          m_engine;
+    uint32_t              m_seed   { 0 };
+    std::mt19937          m_engine { std::random_device{}() };
     static CBasicFeature* m_self;
   };
 
@@ -90,58 +83,57 @@ namespace RRND {
     bool remove(ID t_id);
     ID   random() const;
     void dump() const;
-  protected:
+    void modify(ID t_id, WEIGHT t_new_weight);
   private:
-    std::map<ID, WEIGHT> m_objList; // Contains <ID, WEIGHT>
+    std::vector<std::pair<ID, WEIGHT>> m_obj;
   };
 
   /*============= Class CRatioFeature definition =============*/
   void Basic::Ratio::CRatioFeature::add(ID t_id, WEIGHT t_weight) {
-    if(t_weight == 0) {
-      return;
-    }
-    m_objList.insert({ t_id, t_weight });
+    //m_objList.insert({ t_id, t_weight });
+    m_obj.emplace_back(std::make_pair(t_id, t_weight));
   }
 
   bool Basic::Ratio::CRatioFeature::remove(ID t_id) {
-    m_objList.at(t_id) = 0;
-    return true;//m_objList.erase(t_id);
+    if(t_id >= m_obj.size()) {
+      return false;
+    }
+    m_obj.erase(m_obj.begin() + t_id);
+    return true;
   }
 
-  // BUG: Random in range of inserted idx, meanwhile, there are idx(s) that maybe removed
-
+  // BUG: Random in range of inserted idx, meanwhile, there are idx(s) that maybe removed => FIXED
   Basic::Ratio::CRatioFeature::ID Basic::Ratio::CRatioFeature::random() const {
-    if(m_objList.empty()) {
-      throw std::runtime_error{ "ERROR: Object list was empty to random!" };
+    if(m_obj.empty()) {
+      throw std::runtime_error{ "ERROR: There is no object to random!" };
     }
 
-    uint32_t total_weight = 0;
-    for(const auto& p : m_objList) {
-      total_weight += p.second;
-    }
+    uint32_t const total_weight = std::accumulate(m_obj.begin(), m_obj.end(), 0, [](uint32_t s, std::pair<ID, WEIGHT> const& p) {
+      return s + p.second;
+    });
+    uint32_t const minimum_random_weight = 1;
+    uint32_t const random_weight = CBasicFeature::getInstance()->random(minimum_random_weight, total_weight);
 
-    const uint32_t minimum_random_weight = 1;
-    const uint32_t random_weight = CBasicFeature::getInstance()->random(minimum_random_weight, total_weight);
-
-    uint32_t current_weight = 0;
-    ID result = (*m_objList.begin()).first;
-    for(const auto& p : m_objList) {
-      if(current_weight + p.second >= random_weight) {
-        result = p.first;
+    ID idx = 0;
+    for(uint32_t current_weight = 0; idx < m_obj.size() - 1; ++idx) {
+      current_weight += m_obj[idx].second;
+      if(current_weight >= random_weight) {
         break;
       }
-
-      current_weight += p.second;
     }
 
-    return result;
+    return idx;
   }
 
   void Basic::Ratio::CRatioFeature::dump() const {
-    for(const auto& p : m_objList) {
-      std::cout << "ID: " << p.first << ", W: " << p.second << '\n';
+    for(auto const& p : m_obj) {
+      std::cout << "IDX: " << p.first << ", W: " << p.second << '\n';
     }
     std::cout << "====================" << '\n';
+  }
+
+  void Basic::Ratio::CRatioFeature::modify(ID t_id, WEIGHT t_new_weight) {
+    m_obj.at(t_id).second = t_new_weight;
   }
 
   /*============================/END/=============================*/
@@ -154,7 +146,7 @@ namespace RRND {
     return CBasicFeature::getInstance()->getSeed();
   }
 
-  Basic::Ratio::CRatioFeature* Basic::Ratio::get_ratio_randomizer() {
+  Basic::Ratio::CRatioFeature* Basic::Ratio::get_ratio_modified_engine() {
     return (new CRatioFeature());
   }
 
@@ -174,11 +166,15 @@ namespace RRND {
     t_ratio_random_ptr->dump();
   }
 
+  void Basic::Ratio::modify(uint32_t t_id, uint32_t t_weight, CRatioFeature* t_ptr) {
+    t_ptr->modify(t_id, t_weight);
+  }
+
   template <typename T>
   T Basic::random(T t_min, T t_max) {
     return CBasicFeature::getInstance()->random(t_min, t_max);
   }
-  
+
 
   // Specialization -> random
   template int32_t    RRND::Basic::random<int32_t>(int32_t, int32_t);
