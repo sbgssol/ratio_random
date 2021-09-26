@@ -26,8 +26,11 @@ int main()
 	lst.add(A{ 3, "Three" }, 10);
 	lst.add(A{ 4, "Four" }, 10);
 
+	lst.remove(3);
+	lst.remove(2);
+
 	lst.at(1).str = "First";
-	lst.modify(1, 100);
+	lst.change_weight(1, 100);
 
 	lst.dump([](A const & obj) { return std::to_string(obj.a) + " - " + obj.str; });
 

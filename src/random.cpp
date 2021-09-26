@@ -1,13 +1,13 @@
 #include "random.h"
-#include <iostream>
-#include <random>
-#include <cstdint>
-#include <typeinfo>
-#include <map>
-#include <unordered_map>
-#include <iomanip>
+
 #include <algorithm>
+#include <cstdint>
+#include <iomanip>
+#include <iostream>
+#include <map>
 #include <numeric>
+#include <random>
+#include <unordered_map>
 
 namespace RRND {
   /*============= Class CBasicFeature declaration =============*/
@@ -83,7 +83,7 @@ namespace RRND {
     bool remove(ID t_id);
     ID   random() const;
     void dump() const;
-    void modify(ID t_id, WEIGHT t_new_weight);
+    void change_weight(ID t_id, WEIGHT t_new_weight);
   private:
     std::vector<std::pair<ID, WEIGHT>> m_obj;
   };
@@ -132,7 +132,7 @@ namespace RRND {
     std::cout << "====================" << '\n';
   }
 
-  void Basic::Ratio::CRatioFeature::modify(ID t_id, WEIGHT t_new_weight) {
+  void Basic::Ratio::CRatioFeature::change_weight(ID t_id, WEIGHT t_new_weight) {
     m_obj.at(t_id).second = t_new_weight;
   }
 
@@ -166,8 +166,8 @@ namespace RRND {
     t_ratio_random_ptr->dump();
   }
 
-  void Basic::Ratio::modify(uint32_t t_id, uint32_t t_weight, CRatioFeature* t_ptr) {
-    t_ptr->modify(t_id, t_weight);
+  void Basic::Ratio::change_weight(uint32_t t_id, uint32_t t_weight, CRatioFeature* t_ptr) {
+    t_ptr->change_weight(t_id, t_weight);
   }
 
   template <typename T>

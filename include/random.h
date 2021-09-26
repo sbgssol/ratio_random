@@ -43,7 +43,7 @@ namespace RRND {
       static bool           remove(uint32_t, CRatioFeature*);
       static uint32_t       random(CRatioFeature*);
       static void           dump(CRatioFeature*);
-      static void           modify(uint32_t, uint32_t, CRatioFeature*);
+      static void           change_weight(uint32_t, uint32_t, CRatioFeature*);
 
       template<class T>
       friend class Core;
@@ -103,7 +103,7 @@ namespace RRND {
      * @param f Function to dump object
      */
     template<class FUNCTION>
-    void                                      dump(FUNCTION f, std::ostream& os = std::cout) const;
+    void                                      dump(FUNCTION f, std::ostream& t_os = std::cout) const;
 
     /**
      * @brief Get an object and its weight at a specific position
@@ -117,7 +117,7 @@ namespace RRND {
      * @param t_pos Position to modify
      * @param t_new_weight New weight
      */
-    void                                       modify(size_t t_pos, uint32_t t_new_weight);
+    void                                       change_weight(size_t t_pos, uint32_t t_new_weight);
     
   private:
     // This member indicates maximum obj size, also used as auto-incremented ID
@@ -180,15 +180,15 @@ void RRND::Core<CLASS_C>::dump() const {
 
 template <class CLASS_C>
 template <class FUNCTION>
-void RRND::Core<CLASS_C>::dump(FUNCTION f, std::ostream& os) const {
+void RRND::Core<CLASS_C>::dump(FUNCTION f, std::ostream& t_os) const {
   for(uint32_t i = 0; i < m_objLst.size(); ++i) {
     auto const& p = m_objLst[i];
-    std::cout << "IDX[" << std::setw(10) << std::setfill(' ') << std::right << i << "] - value: " << f(p.first) << ", W: " << p.second << '\n';
+    t_os << "IDX[" << std::setw(10) << std::setfill(' ') << std::right << i << "] - value: " << f(p.first) << ", W: " << p.second << '\n';
   }
 }
 
 template <class CLASS_C>
-void RRND::Core<CLASS_C>::modify(size_t t_pos, uint32_t t_new_weight) {
-  Basic::Ratio::modify(t_pos, t_new_weight, m_randomPtr);
+void RRND::Core<CLASS_C>::change_weight(size_t t_pos, uint32_t t_new_weight) {
+  Basic::Ratio::change_weight(t_pos, t_new_weight, m_randomPtr);
   m_objLst.at(t_pos).second = t_new_weight;
 }
