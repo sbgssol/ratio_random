@@ -42,6 +42,7 @@ namespace RRND {
       static void           add(uint32_t, uint32_t, CRatioFeature*);
       static bool           remove(uint32_t, CRatioFeature*);
       static uint32_t       random(CRatioFeature*);
+      static uint32_t       random(CRatioFeature*, std::vector<uint32_t> const &);
       static void           dump(CRatioFeature*);
       static void           change_weight(uint32_t, uint32_t, CRatioFeature*);
 
@@ -118,23 +119,29 @@ namespace RRND {
      * @param t_new_weight New weight
      */
     void                                       change_weight(size_t t_pos, uint32_t t_new_weight);
-    
+
+    /**
+     * @brief Random an object in the specified vector of objects
+     * @param t_lst Vector of objects
+     * @return random object
+     */
+    static CLASS_C                             random(std::vector<CLASS_C> const & t_lst);
   private:
     // This member indicates maximum obj size, also used as auto-incremented ID
     uint32_t                                  m_idx;
     // This member store: obj, weight
     std::vector<std::pair<CLASS_C, uint32_t>> m_objLst;
-    Basic::Ratio::CRatioFeature*              m_randomPtr;
+    static Basic::Ratio::CRatioFeature*       m_randomPtr;
   };
 }
 
 
-// TODO: Change ratio of available objects => DONE
-
-
 
 template <class CLASS_C>
-RRND::Core<CLASS_C>::Core() :m_idx(0), m_randomPtr(Basic::Ratio::get_ratio_modified_engine()) {
+RRND::Basic::Ratio::CRatioFeature* RRND::Core<CLASS_C>::m_randomPtr{ Basic::Ratio::get_ratio_modified_engine() };
+
+template <class CLASS_C>
+RRND::Core<CLASS_C>::Core() :m_idx(0) {
 }
 
 template <class CLASS_C>
@@ -191,4 +198,14 @@ template <class CLASS_C>
 void RRND::Core<CLASS_C>::change_weight(size_t t_pos, uint32_t t_new_weight) {
   Basic::Ratio::change_weight(t_pos, t_new_weight, m_randomPtr);
   m_objLst.at(t_pos).second = t_new_weight;
+}
+
+template <class CLASS_C>
+CLASS_C RRND::Core<CLASS_C>::random(std::vector<CLASS_C> const & t_lst) {
+  std::vector<uint32_t> id;
+  id.reserve(t_lst.size());
+  for(uint32_t i = 0; i < t_lst.size(); ++i) {
+    id.emplace_back(i);
+  }
+  return t_lst.at(Basic::Ratio::random(m_randomPtr, id));
 }

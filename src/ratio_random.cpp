@@ -1,4 +1,4 @@
-#include "random.h"
+#include "ratio_random.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -82,6 +82,7 @@ namespace RRND {
     void add(ID t_id, WEIGHT t_weight);
     bool remove(ID t_id);
     ID   random() const;
+    ID   random(std::vector<std::pair<ID, WEIGHT>> const &);
     void dump() const;
     void change_weight(ID t_id, WEIGHT t_new_weight);
   private:
@@ -102,8 +103,7 @@ namespace RRND {
     return true;
   }
 
-  // BUG: Random in range of inserted idx, meanwhile, there are idx(s) that maybe removed => FIXED
-  Basic::Ratio::CRatioFeature::ID Basic::Ratio::CRatioFeature::random() const {
+    Basic::Ratio::CRatioFeature::ID Basic::Ratio::CRatioFeature::random() const {
     if(m_obj.empty()) {
       throw std::runtime_error{ "ERROR: There is no object to random!" };
     }
@@ -123,6 +123,19 @@ namespace RRND {
     }
 
     return idx;
+  }
+
+  Basic::Ratio::CRatioFeature::ID Basic::Ratio::CRatioFeature::random(std::vector<std::pair<ID, WEIGHT>> const& t_lst) {
+    std::vector<std::pair<ID, WEIGHT>> temporary;
+    std::copy(m_obj.begin(), m_obj.end(), std::back_inserter(temporary));
+    m_obj.clear();
+    std::copy(t_lst.begin(), t_lst.end(), std::back_inserter(m_obj));
+
+    ID const id = this->random();
+
+    m_obj.clear();
+    std::copy(temporary.begin(), temporary.end(), std::back_inserter(m_obj));
+    return id;
   }
 
   void Basic::Ratio::CRatioFeature::dump() const {
@@ -162,6 +175,15 @@ namespace RRND {
     return t_ratio_random_ptr->random();
   }
 
+  uint32_t Basic::Ratio::random(CRatioFeature* t_ratio_random_ptr, std::vector<uint32_t> const& t_lst) {
+    std::vector<std::pair<uint32_t, uint32_t>> v;
+    v.reserve(t_lst.size());
+    for(auto const & p : t_lst) {
+      v.emplace_back(std::make_pair(p, 10));
+    }
+    return t_ratio_random_ptr->random(v);
+  }
+
   void Basic::Ratio::dump(CRatioFeature* t_ratio_random_ptr) {
     t_ratio_random_ptr->dump();
   }
@@ -174,6 +196,7 @@ namespace RRND {
   T Basic::random(T t_min, T t_max) {
     return CBasicFeature::getInstance()->random(t_min, t_max);
   }
+
 
 
   // Specialization -> random
