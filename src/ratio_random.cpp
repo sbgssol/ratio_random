@@ -175,15 +175,6 @@ namespace RRND {
     return t_ratio_random_ptr->random();
   }
 
-  uint32_t Basic::Ratio::random(CRatioFeature* t_ratio_random_ptr, std::vector<uint32_t> const& t_lst) {
-    std::vector<std::pair<uint32_t, uint32_t>> v;
-    v.reserve(t_lst.size());
-    for(auto const & p : t_lst) {
-      v.emplace_back(std::make_pair(p, 10));
-    }
-    return t_ratio_random_ptr->random(v);
-  }
-
   void Basic::Ratio::dump(CRatioFeature* t_ratio_random_ptr) {
     t_ratio_random_ptr->dump();
   }

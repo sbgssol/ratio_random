@@ -42,7 +42,6 @@ namespace RRND {
       static void           add(uint32_t, uint32_t, CRatioFeature*);
       static bool           remove(uint32_t, CRatioFeature*);
       static uint32_t       random(CRatioFeature*);
-      static uint32_t       random(CRatioFeature*, std::vector<uint32_t> const &);
       static void           dump(CRatioFeature*);
       static void           change_weight(uint32_t, uint32_t, CRatioFeature*);
 
@@ -202,10 +201,8 @@ void RRND::Core<CLASS_C>::change_weight(size_t t_pos, uint32_t t_new_weight) {
 
 template <class CLASS_C>
 CLASS_C RRND::Core<CLASS_C>::random(std::vector<CLASS_C> const & t_lst) {
-  std::vector<uint32_t> id;
-  id.reserve(t_lst.size());
-  for(uint32_t i = 0; i < t_lst.size(); ++i) {
-    id.emplace_back(i);
+  if(t_lst.empty()) {
+    throw std::runtime_error{"ERROR: Object list was empty to random!"};
   }
-  return t_lst.at(Basic::Ratio::random(m_randomPtr, id));
+  return t_lst.at(Basic::random(0U, t_lst.size() - 1));
 }
