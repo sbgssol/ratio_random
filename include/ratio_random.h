@@ -204,5 +204,5 @@ CLASS_C RRND::Core<CLASS_C>::random(std::vector<CLASS_C> const & t_lst) {
   if(t_lst.empty()) {
     throw std::runtime_error{"ERROR: Object list was empty to random!"};
   }
-  return t_lst.at(Basic::random(0U, t_lst.size() - 1));
+  return t_lst.at(Basic::random(0U, static_cast<uint32_t>(t_lst.size() - 1)));
 }
