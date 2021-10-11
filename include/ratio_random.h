@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 namespace RRND {
   class Basic {
