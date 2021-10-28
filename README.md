@@ -22,7 +22,7 @@ int main() {
   auto hello_str = RRND::Core<std::string>::random({"Hello", "Yasou", "Zdravstvuyte", "Hola", "Bonjour"});
   
   // 4. Get a random object (user defined) with modified ratio
-  RRND::Core<A> obj_rnd;
+  RRND::Core<Person> obj_rnd;
   obj_rnd.add(Person{"Peter"}, 10); // 10/total
   obj_rnd.add(Person{"Sam"},   50); // 50/total
   obj_rnd.add(Person{"Alex"},  30); // 30/total
