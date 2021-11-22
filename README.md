@@ -1,3 +1,4 @@
+
 ## This library provides function to get a random number or user's defined object.
 #### Information
 This library uses the `mt19937(32-bit)` as the core engine.
@@ -49,3 +50,6 @@ int main() {
   return 0;
 }
 ```
+
+### TODO: 
+- Create function to get the number random generator (UniformRandomBitGenerator - URBG) to pass into the `std::random_shuffle()` function.
